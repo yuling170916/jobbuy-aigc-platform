@@ -16,10 +16,10 @@ export const SEED_LORAS: LoraModel[] = [
 // ---------- 初始数据：SKU 商品库（对应文章输入：SKU ID 携带商品图/信息/评论） ----------
 export const SEED_SKUS: Sku[] = [
   { id: 'JB-1001', name: '银色极简耳环', nameEn: 'Minimal Silver Earrings', category: '美妆配饰', sellingPoints: ['925银防过敏', 'ins风百搭', '轻奢质感'], sellingPointsEn: ['925 Silver Hypoallergenic', 'Everyday Minimal Style', 'Feather-light Comfort'], emoji: '💍', price: '$12.99', rating: 4.8, comments: 2304 },
-  { id: 'JB-1002', name: '智能运动手表', nameEn: 'Smart Fitness Watch', category: '3C数码', sellingPoints: ['心率血氧监测', '14天长续航', '50米防水'], sellingPointsEn: ['Heart & SpO2 Tracking', '14-Day Battery Life', '50m Water Resistant'], emoji: '⌚', price: '$49.99', rating: 4.6, comments: 8921 },
-  { id: 'JB-1003', name: '马卡龙收纳盒', nameEn: 'Macaron Storage Box', category: '家居日用', sellingPoints: ['可叠放设计', '食品级材质', '北欧配色'], sellingPointsEn: ['Stackable Design', 'Food-grade Material', 'Nordic Colors'], emoji: '📦', price: '$18.50', rating: 4.7, comments: 1567 },
-  { id: 'JB-1004', name: '青梅果酒礼盒', nameEn: 'Plum Wine Gift Set', category: '食品酒饮', sellingPoints: ['微醺低度', '高颜值礼盒', '佐餐百搭'], sellingPointsEn: ['Light & Smooth', 'Gift-ready Packaging', 'Pairs with Any Meal'], emoji: '🍶', price: '$25.00', rating: 4.9, comments: 3102 },
-  { id: 'JB-1005', name: '立式变频空调', nameEn: 'Inverter Tower AC', category: '家用电器', sellingPoints: ['智柔变频', '节能省电', '温湿双控'], sellingPointsEn: ['Smart Inverter Tech', 'Energy Saving', 'Temp & Humidity Control'], emoji: '🌬️', price: '$699.00', rating: 4.7, comments: 678 },
+  { id: 'JB-1002', name: '智能运动手表', nameEn: 'Smart Fitness Watch', category: '3C数码', sellingPoints: ['心率血氧监测', '14天长续航', '50米防水'], sellingPointsEn: ['24/7 Heart Rate & SpO2', '14-Day Battery Life', '5ATM Water Resistant'], emoji: '⌚', price: '$49.99', rating: 4.6, comments: 8921 },
+  { id: 'JB-1003', name: '马卡龙收纳盒', nameEn: 'Macaron Pastel Storage Boxes', category: '家居日用', sellingPoints: ['可叠放设计', '食品级材质', '北欧配色'], sellingPointsEn: ['Space-Saving Stackable Design', 'Food-Grade Safe Material', 'Soft Nordic Pastels'], emoji: '📦', price: '$18.50', rating: 4.7, comments: 1567 },
+  { id: 'JB-1004', name: '青梅果酒礼盒', nameEn: 'Green Plum Wine Gift Set', category: '食品酒饮', sellingPoints: ['微醺低度', '高颜值礼盒', '佐餐百搭'], sellingPointsEn: ['Low ABV, Easy Sipping', 'Beautiful Gift-Ready Box', 'Pairs with Any Meal'], emoji: '🍶', price: '$25.00', rating: 4.9, comments: 3102 },
+  { id: 'JB-1005', name: '立式变频空调', nameEn: 'Smart Inverter Tower AC', category: '家用电器', sellingPoints: ['智柔变频', '节能省电', '温湿双控'], sellingPointsEn: ['Gentle Inverter Cooling', 'Energy-Efficient Performance', 'Dual Temp & Humidity Control'], emoji: '🌬️', price: '$699.00', rating: 4.7, comments: 678 },
 ];
 
 const DEFAULT_SETTINGS: Settings = { mode: 'demo', comfyEndpoint: 'http://127.0.0.1:8188' };
