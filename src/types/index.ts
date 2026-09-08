@@ -52,8 +52,10 @@ export interface Asset {
 export interface Sku {
   id: string;
   name: string;
+  nameEn: string;            // 英文名（海外站成品图用）
   category: string;
   sellingPoints: string[];
+  sellingPointsEn: string[]; // 英文卖点（海外站成品图用）
   emoji: string;
   price: string;     // 价格（首焦图布局输入之一）
   rating: number;    // 评分

@@ -100,6 +100,26 @@ export interface AdSpec {
   ctaColor: string;
 }
 
+/** 按像素宽度换行：英文按单词断行，中文按字断行 */
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines: number): string[] {
+  const isCJK = /[一-鿿]/.test(text);
+  const units = isCJK ? text.split('') : text.split(' ');
+  const lines: string[] = [];
+  let cur = '';
+  for (const u of units) {
+    const next = isCJK ? cur + u : (cur ? cur + ' ' + u : u);
+    if (ctx.measureText(next).width <= maxWidth || !cur) {
+      cur = next;
+    } else {
+      lines.push(cur);
+      cur = u;
+      if (lines.length === maxLines - 1) break;
+    }
+  }
+  if (cur && lines.length < maxLines) lines.push(cur);
+  return lines;
+}
+
 /** 图文布局生成：背景图 + 主标题/副标题/点击引导 自动排版（文章 02 部分） */
 export async function composeAdImage(seed: number, lora: LoraModel, productEmoji: string, spec: AdSpec): Promise<string> {
   const posMap: Record<AdSpec['template'], ProductPos> = { left: 'right', right: 'left', top: 'bottom' };
@@ -112,37 +132,35 @@ export async function composeAdImage(seed: number, lora: LoraModel, productEmoji
   ctx.drawImage(bg, 0, 0, S, S);
 
   const { title, subtitle, cta, template, textColor, ctaColor } = spec;
-  const mid = Math.ceil(title.length / 2);
-  const titleLines = title.length > 4 ? [title.slice(0, mid), title.slice(mid)] : [title];
-  const subMid = Math.ceil(subtitle.length / 2);
-  const subLines = subtitle.length > 8 ? [subtitle.slice(0, subMid), subtitle.slice(subMid)] : [subtitle];
 
-  // 文本块定位
-  let tx: number, align: CanvasTextAlign, startY: number;
-  if (template === 'left') { tx = 70; align = 'left'; startY = S * 0.3; }
-  else if (template === 'right') { tx = S - 70; align = 'right'; startY = S * 0.3; }
-  else { tx = S / 2; align = 'center'; startY = S * 0.14; }
+  // 文本块定位与可用宽度
+  let tx: number, align: CanvasTextAlign, startY: number, maxW: number;
+  if (template === 'left') { tx = 70; align = 'left'; startY = S * 0.26; maxW = S * 0.44; }
+  else if (template === 'right') { tx = S - 70; align = 'right'; startY = S * 0.26; maxW = S * 0.44; }
+  else { tx = S / 2; align = 'center'; startY = S * 0.13; maxW = S * 0.8; }
 
   ctx.textAlign = align;
   ctx.fillStyle = textColor;
 
-  // 主标题
-  ctx.font = `700 74px "PingFang SC", "Microsoft YaHei", sans-serif`;
-  titleLines.forEach((line, i) => ctx.fillText(line, tx, startY + i * 88));
+  // 主标题（自动换行，最多 3 行）
+  ctx.font = `700 68px "Helvetica Neue", "PingFang SC", sans-serif`;
+  const titleLines = wrapText(ctx, title, maxW, 3);
+  titleLines.forEach((line, i) => ctx.fillText(line, tx, startY + i * 80));
 
   // 分隔线（衬底元素规范）
-  const lineY = startY + titleLines.length * 88 - 20;
+  const lineY = startY + (titleLines.length - 1) * 80 + 26;
   ctx.fillRect(align === 'center' ? tx - 45 : align === 'right' ? tx - 90 : tx, lineY, 90, 5);
 
-  // 副标题
-  ctx.font = `400 34px "PingFang SC", "Microsoft YaHei", sans-serif`;
-  subLines.forEach((line, i) => ctx.fillText(line, tx, lineY + 58 + i * 48));
+  // 副标题（自动换行，最多 2 行）
+  ctx.font = `400 32px "Helvetica Neue", "PingFang SC", sans-serif`;
+  const subLines = wrapText(ctx, subtitle, maxW, 2);
+  subLines.forEach((line, i) => ctx.fillText(line, tx, lineY + 56 + i * 46));
 
   // 点击引导按钮
-  const ctaY = lineY + 58 + subLines.length * 48 + 24;
-  ctx.font = `600 32px "PingFang SC", "Microsoft YaHei", sans-serif`;
+  const ctaY = lineY + 56 + (subLines.length - 1) * 46 + 36;
+  ctx.font = `600 30px "Helvetica Neue", "PingFang SC", sans-serif`;
   const tw = ctx.measureText(cta).width;
-  const bw = tw + 90, bh = 68;
+  const bw = tw + 100, bh = 66;
   const bx = align === 'center' ? tx - bw / 2 : align === 'right' ? tx - bw : tx;
   ctx.fillStyle = ctaColor;
   ctx.beginPath();
@@ -150,7 +168,7 @@ export async function composeAdImage(seed: number, lora: LoraModel, productEmoji
   ctx.fill();
   ctx.fillStyle = '#ffffff';
   ctx.textAlign = 'center';
-  ctx.fillText(`${cta} ›`, bx + bw / 2, ctaY + bh / 2 + 12);
+  ctx.fillText(`${cta} ›`, bx + bw / 2, ctaY + bh / 2 + 11);
 
   return canvas.toDataURL('image/png');
 }
@@ -188,6 +206,28 @@ export function generateCopy(skuName: string, points: string[]): { titles: strin
     `【核心卖点】${p.join('；') || main}`,
     `【场景描述】无论是日常使用还是送礼，${skuName}都能胜任。`,
     `【品质承诺】Jobbuy 海外仓直发，支持 30 天无理由退换。`,
+  ].join('\n');
+  return { titles, detail };
+}
+
+// ---------- 英文文案（海外站成品图专用：首焦图上的主标题/副标题/CTA 用英文） ----------
+
+const TITLE_TEMPLATES_EN = [
+  (_n: string, p: string) => p,
+  (n: string, _p: string) => `${n}`,
+  (n: string, p: string) => `${p} with ${n}`,
+  (n: string, _p: string) => `New Arrival: ${n}`,
+  (n: string, p: string) => `${n} — ${p}`,
+];
+
+export function generateCopyEn(skuNameEn: string, pointsEn: string[]): { titles: string[]; detail: string } {
+  const p = pointsEn.filter(Boolean);
+  const main = p[0] || 'Quality Pick';
+  const titles = TITLE_TEMPLATES_EN.map((t, i) => t(skuNameEn, p[i % Math.max(p.length, 1)] || main));
+  const detail = [
+    `Highlights: ${p.join(' · ') || main}`,
+    `Perfect for daily use or as a gift — ${skuNameEn} fits every moment.`,
+    `Shipped from Jobbuy overseas warehouses. 30-day free returns.`,
   ].join('\n');
   return { titles, detail };
 }

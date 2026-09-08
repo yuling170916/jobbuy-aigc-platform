@@ -2,7 +2,7 @@
 // 「input 参数作为预制节点，平台使用过程中只需要输入 sku list 列表，即可完成图像生成，直接上线」
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/lib/store';
-import { composeAdImage, demoImage, generateCopy } from '@/lib/demo';
+import { composeAdImage, demoImage, generateCopyEn } from '@/lib/demo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,14 +41,14 @@ export default function QuickGenerate() {
     runTasks.filter(t => t.status === 'done' && !t.row.name.endsWith('_bg')).forEach(t => {
       const sku = skus.find(s => s.id === t.row.sku);
       if (!sku) return;
-      const copy = generateCopy(sku.name, sku.sellingPoints);
+      const copy = generateCopyEn(sku.nameEn, sku.sellingPointsEn);
       t.seeds.slice(0, 2).forEach((seed, k) => {
         const key = `${t.id}-${k}`;
         if (composited[key]) return;
         composeAdImage(seed, loraOf(t.row.loraId), sku.emoji, {
-          title: copy.titles[0].slice(0, 8),
-          subtitle: sku.sellingPoints.slice(0, 2).join(' · '),
-          cta: '立即抢购',
+          title: copy.titles[0],
+          subtitle: sku.sellingPointsEn.slice(0, 2).join(' · '),
+          cta: 'Shop Now',
           template: k % 2 === 0 ? 'left' : 'right',
           textColor: '#1a1a1a',
           ctaColor: '#1a1a1a',

@@ -2,7 +2,7 @@
 // 通过识别 Sku ID 携带的产品图、标题、价格、评论等信息，自动布局主标题、副标题、点击引导
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/lib/store';
-import { composeAdImage, contrastRatio, generateCopy } from '@/lib/demo';
+import { composeAdImage, contrastRatio, generateCopy, generateCopyEn } from '@/lib/demo';
 import type { AdSpec } from '@/lib/demo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,22 +16,27 @@ export default function AdLayout() {
   const [skuId, setSkuId] = useState(skus[0]?.id ?? '');
   const [loraId, setLoraId] = useState(loras[0].id);
   const [template, setTemplate] = useState<AdSpec['template']>('left');
+  const [lang, setLang] = useState<'zh' | 'en'>('en'); // 海外站默认英文
   const sku = skus.find(s => s.id === skuId) ?? skus[0];
   const lora = loras.find(l => l.id === loraId) ?? loras[0];
 
-  const autoCopy = useMemo(() => generateCopy(sku.name, sku.sellingPoints), [sku]);
+  const autoCopy = useMemo(
+    () => (lang === 'en' ? generateCopyEn(sku.nameEn, sku.sellingPointsEn) : generateCopy(sku.name, sku.sellingPoints)),
+    [sku, lang]
+  );
   const [title, setTitle] = useState('');
   const [subtitle, setSubtitle] = useState('');
-  const [cta, setCta] = useState('立即抢购');
+  const [cta, setCta] = useState('Shop Now');
   const [textColor, setTextColor] = useState(TEXT_COLORS[0]);
   const [ctaColor, setCtaColor] = useState(CTA_COLORS[0]);
   const [url, setUrl] = useState('');
 
-  // 切换 SKU 时自动带入文案（文章：识别 Sku ID 携带的信息自动布局）
+  // 切换 SKU / 语言时自动带入文案（文章：识别 Sku ID 携带的信息自动布局）
   useEffect(() => {
-    setTitle(autoCopy.titles[0].slice(0, 8));
-    setSubtitle(sku.sellingPoints.slice(0, 2).join(' · '));
-  }, [skuId]); // eslint-disable-line react-hooks/exhaustive-deps
+    setTitle(autoCopy.titles[0]);
+    setSubtitle(lang === 'en' ? sku.sellingPointsEn.slice(0, 2).join(' · ') : sku.sellingPoints.slice(0, 2).join(' · '));
+    setCta(lang === 'en' ? 'Shop Now' : '立即抢购');
+  }, [skuId, lang]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const spec: AdSpec = { title, subtitle, cta, template, textColor, ctaColor };
   useEffect(() => {
@@ -100,17 +105,23 @@ export default function AdLayout() {
           </Card>
 
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-base">文本规范（随 SKU 自动带入，可改）</CardTitle></CardHeader>
+            <CardHeader className="pb-2 flex-row items-center justify-between">
+              <CardTitle className="text-base">文本规范（随 SKU 自动带入，可改）</CardTitle>
+              <div className="flex rounded-lg border overflow-hidden text-xs">
+                <button onClick={() => setLang('en')} className={`px-3 py-1.5 ${lang === 'en' ? 'bg-indigo-600 text-white' : 'bg-background'}`}>EN 海外站</button>
+                <button onClick={() => setLang('zh')} className={`px-3 py-1.5 ${lang === 'zh' ? 'bg-indigo-600 text-white' : 'bg-background'}`}>中文</button>
+              </div>
+            </CardHeader>
             <CardContent className="space-y-2.5">
               <select className="w-full border rounded-md px-2 py-1.5 text-sm bg-background" value={skuId} onChange={e => setSkuId(e.target.value)}>
-                {skus.map(s => <option key={s.id} value={s.id}>{s.emoji} {s.id} · {s.name} · {s.price}</option>)}
+                {skus.map(s => <option key={s.id} value={s.id}>{s.emoji} {s.id} · {lang === 'en' ? s.nameEn : s.name} · {s.price}</option>)}
               </select>
               <select className="w-full border rounded-md px-2 py-1.5 text-sm bg-background" value={loraId} onChange={e => setLoraId(e.target.value)}>
                 {loras.map(l => <option key={l.id} value={l.id}>{l.emoji} 背景场景：{l.name}</option>)}
               </select>
-              <div><label className="text-xs text-muted-foreground">主标题（≤8字，自动两行拆分）</label><Input value={title} maxLength={8} onChange={e => setTitle(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground">副标题（≤16字）</label><Input value={subtitle} maxLength={16} onChange={e => setSubtitle(e.target.value)} /></div>
-              <div><label className="text-xs text-muted-foreground">点击引导按钮</label><Input value={cta} maxLength={6} onChange={e => setCta(e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">主标题（自动按宽度换行，建议 ≤3 行）</label><Input value={title} maxLength={lang === 'en' ? 40 : 12} onChange={e => setTitle(e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">副标题（最多 2 行）</label><Input value={subtitle} maxLength={lang === 'en' ? 60 : 16} onChange={e => setSubtitle(e.target.value)} /></div>
+              <div><label className="text-xs text-muted-foreground">点击引导按钮（CTA）</label><Input value={cta} maxLength={lang === 'en' ? 16 : 6} onChange={e => setCta(e.target.value)} /></div>
             </CardContent>
           </Card>
 
