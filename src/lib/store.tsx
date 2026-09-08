@@ -15,10 +15,11 @@ export const SEED_LORAS: LoraModel[] = [
 
 // ---------- 初始数据：SKU 商品库（对应文章输入：SKU ID 携带商品图/信息/评论） ----------
 export const SEED_SKUS: Sku[] = [
-  { id: 'JB-1001', name: '银色极简耳环', category: '美妆配饰', sellingPoints: ['925银防过敏', 'ins风百搭', '轻奢质感'], emoji: '💍' },
-  { id: 'JB-1002', name: '智能运动手表', category: '3C数码', sellingPoints: ['心率血氧监测', '14天续航', '50米防水'], emoji: '⌚' },
-  { id: 'JB-1003', name: '马卡龙收纳盒', category: '家居日用', sellingPoints: ['可叠放设计', '食品级材质', '北欧配色'], emoji: '📦' },
-  { id: 'JB-1004', name: '青梅果酒礼盒', category: '食品酒饮', sellingPoints: ['微醺低度', '高颜值礼盒', '佐餐百搭'], emoji: '🍶' },
+  { id: 'JB-1001', name: '银色极简耳环', category: '美妆配饰', sellingPoints: ['925银防过敏', 'ins风百搭', '轻奢质感'], emoji: '💍', price: '$12.99', rating: 4.8, comments: 2304 },
+  { id: 'JB-1002', name: '智能运动手表', category: '3C数码', sellingPoints: ['心率血氧监测', '14天长续航', '50米防水'], emoji: '⌚', price: '$49.99', rating: 4.6, comments: 8921 },
+  { id: 'JB-1003', name: '马卡龙收纳盒', category: '家居日用', sellingPoints: ['可叠放设计', '食品级材质', '北欧配色'], emoji: '📦', price: '$18.50', rating: 4.7, comments: 1567 },
+  { id: 'JB-1004', name: '青梅果酒礼盒', category: '食品酒饮', sellingPoints: ['微醺低度', '高颜值礼盒', '佐餐百搭'], emoji: '🍶', price: '$25.00', rating: 4.9, comments: 3102 },
+  { id: 'JB-1005', name: '立式变频空调', category: '家用电器', sellingPoints: ['智柔变频', '节能省电', '温湿双控'], emoji: '🌬️', price: '$699.00', rating: 4.7, comments: 678 },
 ];
 
 const DEFAULT_SETTINGS: Settings = { mode: 'demo', comfyEndpoint: 'http://127.0.0.1:8188' };
@@ -30,8 +31,7 @@ interface StoreState {
   assets: Asset[];
   copies: CopyResult[];
   settings: Settings;
-  submitBatch: (rows: DemandRow[], skuId: string) => void;
-  reviewAsset: (id: string, status: Asset['status'], reason?: string) => void;
+  submitBatch: (rows: DemandRow[]) => void;  reviewAsset: (id: string, status: Asset['status'], reason?: string) => void;
   addCopy: (c: CopyResult) => void;
   setSettings: (s: Settings) => void;
   resetAll: () => void;
@@ -64,7 +64,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [tasks, assets, copies, settings]);
 
   // 提交一批需求 → 建立任务 → 模拟"服务器 7×24 出图"的进度
-  const submitBatch = (rows: DemandRow[], skuId: string) => {
+  const submitBatch = (rows: DemandRow[]) => {
     const now = Date.now();
     const newTasks: GenTask[] = rows.map((row, i) => ({
       id: `T${now}-${i}`,
@@ -97,7 +97,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             ...task.seeds.map((seed, k) => ({
               id: `A${task.id}-${k}`,
               taskName: task.row.name,
-              sku: skuId,
+              sku: task.row.sku,
               seed,
               loraId: task.row.loraId,
               prompt: task.row.prompt,

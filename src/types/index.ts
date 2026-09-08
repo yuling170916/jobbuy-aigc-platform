@@ -17,6 +17,7 @@ export interface LoraModel {
 
 /** 需求表中的一行（对应文章的 CSV：命名,内容,不希望出现,风格,数量） */
 export interface DemandRow {
+  sku: string;       // 所属 SKU ID（文章：input 参数预制后，平台只需输入 sku list）
   name: string;      // 图像命名（不可重复）
   prompt: string;    // 图像内容（正向提示词）
   negative: string;  // 不希望出现（反向提示词）
@@ -47,13 +48,16 @@ export interface Asset {
   createdAt: number;
 }
 
-/** SKU 商品（文章链路图的输入：SKU ID 携带商品图/信息/评论） */
+/** SKU 商品（文章链路图的输入：SKU ID 携带商品图/信息/评论/开箱图） */
 export interface Sku {
   id: string;
   name: string;
   category: string;
   sellingPoints: string[];
   emoji: string;
+  price: string;     // 价格（首焦图布局输入之一）
+  rating: number;    // 评分
+  comments: number;  // 评论数
 }
 
 /** 文案任务产出（文本线：引流标题/详情文案） */

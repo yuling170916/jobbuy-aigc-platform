@@ -8,12 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
-const emptyRow = (loraId: string): DemandRow => ({ name: '', prompt: '', negative: '低质量、模糊、水印、文字、变形、多余元素', loraId, count: 4 });
+const emptyRow = (loraId: string, sku: string): DemandRow => ({ sku, name: '', prompt: '', negative: '低质量、模糊、水印、文字、变形、多余元素', loraId, count: 4 });
 
 export default function BatchGenerate() {
   const { loras, skus, submitBatch, settings } = useStore();
   const [skuId, setSkuId] = useState(skus[0]?.id ?? '');
-  const [rows, setRows] = useState<DemandRow[]>([emptyRow(loras[0].id)]);
+  const [rows, setRows] = useState<DemandRow[]>([emptyRow(loras[0].id, skus[0]?.id ?? '')]);
   const [csvOpen, setCsvOpen] = useState(false);
   const [csvText, setCsvText] = useState('');
   const [msg, setMsg] = useState('');
@@ -28,9 +28,9 @@ export default function BatchGenerate() {
     if (!valid.length) { setMsg('⚠️ 至少填一行：图像命名 + 图像内容不能为空'); return; }
     const names = new Set(valid.map(r => r.name.trim()));
     if (names.size !== valid.length) { setMsg('⚠️ 图像命名不可重复（它是 ID）'); return; }
-    submitBatch(valid, skuId);
+    submitBatch(valid.map(r => ({ ...r, sku: skuId })));
     setMsg(`✅ 已提交 ${valid.length} 条任务、共 ${total} 张图（${settings.mode === 'demo' ? '演示模式' : 'ComfyUI 模式'}），去「任务队列」看进度`);
-    setRows([emptyRow(loras[0].id)]);
+    setRows([emptyRow(loras[0].id, skuId)]);
   };
 
   // CSV 导入：文章原文格式「命名,内容,不希望出现,风格,数量」
@@ -42,6 +42,7 @@ export default function BatchGenerate() {
       if (parts.length < 2) continue;
       const lora = loras.find(l => l.name.includes(parts[3] ?? '') || l.id === parts[3]) ?? loras[0];
       parsed.push({
+        sku: skuId,
         name: parts[0],
         prompt: parts[1],
         negative: parts[2] || '低质量、模糊、水印',
@@ -91,7 +92,7 @@ export default function BatchGenerate() {
           ))}
 
           <div className="flex items-center gap-2 pt-2 flex-wrap">
-            <Button variant="outline" onClick={() => setRows(rs => [...rs, emptyRow(loras[0].id)])}>＋ 添加行</Button>
+            <Button variant="outline" onClick={() => setRows(rs => [...rs, emptyRow(loras[0].id, skuId)])}>＋ 添加行</Button>
             <Button variant="outline" onClick={() => setCsvOpen(v => !v)}>📋 粘贴 CSV 导入</Button>
             <Button onClick={submit}>🚀 提交生成（共 {total} 张）</Button>
             {msg && <span className="text-sm">{msg}</span>}

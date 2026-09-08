@@ -1,4 +1,4 @@
-// 演示模式出图引擎：用 Canvas 确定性地生成"商品场景图"占位图
+// 演示模式出图引擎：用 Canvas 确定性地生成"商品场景图"
 // 真实模式下由 ComfyUI + LoRA 出图（见 comfyui.ts），这里仅用于无 GPU 环境演示流程
 import type { LoraModel } from '@/types';
 
@@ -24,9 +24,14 @@ function mulberry32(seed: number) {
 
 const cache = new Map<string, string>();
 
-/** 根据种子 + LoRA 场景，确定性生成一张 480px 场景图（dataURL） */
-export function demoImage(seed: number, lora: LoraModel, productEmoji: string): string {
-  const key = `${seed}-${lora.id}-${productEmoji}`;
+export type ProductPos = 'center' | 'left' | 'right' | 'bottom';
+const POS: Record<ProductPos, [number, number]> = {
+  center: [0.5, 0.55], left: [0.28, 0.55], right: [0.7, 0.55], bottom: [0.5, 0.66],
+};
+
+/** 根据种子 + LoRA 场景，确定性生成一张场景底图（dataURL） */
+export function demoImage(seed: number, lora: LoraModel, productEmoji: string, pos: ProductPos = 'center'): string {
+  const key = `${seed}-${lora.id}-${productEmoji}-${pos}`;
   if (cache.has(key)) return cache.get(key)!;
 
   const rand = mulberry32(seed);
@@ -35,16 +40,13 @@ export function demoImage(seed: number, lora: LoraModel, productEmoji: string): 
   canvas.width = size; canvas.height = size;
   const ctx = canvas.getContext('2d')!;
 
-  // 背景：场景渐变 + 随机角度
   const angle = rand() * Math.PI * 2;
-  const x1 = size / 2 + Math.cos(angle) * size, y1 = size / 2 + Math.sin(angle) * size;
-  const g = ctx.createLinearGradient(size / 2, size / 2, x1, y1);
+  const g = ctx.createLinearGradient(size / 2, size / 2, size / 2 + Math.cos(angle) * size, size / 2 + Math.sin(angle) * size);
   g.addColorStop(0, lora.palette[0]);
   g.addColorStop(1, lora.palette[1]);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, size, size);
 
-  // 场景装饰：随机几何块（模拟场景元素）
   for (let i = 0; i < 6; i++) {
     ctx.globalAlpha = 0.10 + rand() * 0.12;
     ctx.fillStyle = rand() > 0.5 ? '#ffffff' : '#000000';
@@ -59,42 +61,123 @@ export function demoImage(seed: number, lora: LoraModel, productEmoji: string): 
   }
   ctx.globalAlpha = 1;
 
-  // 台面光影（产品摆放面）
+  // 台面光影
+  const [px, py] = POS[pos];
   ctx.globalAlpha = 0.18;
   ctx.fillStyle = '#ffffff';
   ctx.beginPath();
-  ctx.ellipse(size / 2, size * 0.78, size * 0.36, size * 0.10, 0, 0, Math.PI * 2);
+  ctx.ellipse(size * px, size * (py + 0.2), size * 0.3, size * 0.08, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.globalAlpha = 1;
 
   // 产品主体
-  ctx.font = `${size * 0.34}px serif`;
+  ctx.font = `${size * 0.3}px serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(productEmoji, size / 2, size * 0.55);
-
-  // 角落场景标签（模拟水印位）
-  ctx.font = `600 ${size * 0.038}px sans-serif`;
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.textAlign = 'left';
-  ctx.fillText(`${lora.name} ${lora.version}`, size * 0.05, size * 0.08);
-  ctx.textAlign = 'right';
-  ctx.fillText('Jobbuy AIGC', size * 0.95, size * 0.94);
+  ctx.fillText(productEmoji, size * px, size * py);
 
   const url = canvas.toDataURL('image/jpeg', 0.82);
-  if (cache.size > 300) cache.clear();
+  if (cache.size > 400) cache.clear();
   cache.set(key, url);
   return url;
+}
+
+function loadImg(src: string): Promise<HTMLImageElement> {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+
+export interface AdSpec {
+  title: string;      // 主标题
+  subtitle: string;   // 副标题
+  cta: string;        // 点击引导按钮文字
+  template: 'left' | 'right' | 'top'; // 版式：左文右图 / 右文左图 / 上文下图
+  textColor: string;
+  ctaColor: string;
+}
+
+/** 图文布局生成：背景图 + 主标题/副标题/点击引导 自动排版（文章 02 部分） */
+export async function composeAdImage(seed: number, lora: LoraModel, productEmoji: string, spec: AdSpec): Promise<string> {
+  const posMap: Record<AdSpec['template'], ProductPos> = { left: 'right', right: 'left', top: 'bottom' };
+  const bg = await loadImg(demoImage(seed, lora, productEmoji, posMap[spec.template]));
+
+  const S = 800;
+  const canvas = document.createElement('canvas');
+  canvas.width = S; canvas.height = S;
+  const ctx = canvas.getContext('2d')!;
+  ctx.drawImage(bg, 0, 0, S, S);
+
+  const { title, subtitle, cta, template, textColor, ctaColor } = spec;
+  const mid = Math.ceil(title.length / 2);
+  const titleLines = title.length > 4 ? [title.slice(0, mid), title.slice(mid)] : [title];
+  const subMid = Math.ceil(subtitle.length / 2);
+  const subLines = subtitle.length > 8 ? [subtitle.slice(0, subMid), subtitle.slice(subMid)] : [subtitle];
+
+  // 文本块定位
+  let tx: number, align: CanvasTextAlign, startY: number;
+  if (template === 'left') { tx = 70; align = 'left'; startY = S * 0.3; }
+  else if (template === 'right') { tx = S - 70; align = 'right'; startY = S * 0.3; }
+  else { tx = S / 2; align = 'center'; startY = S * 0.14; }
+
+  ctx.textAlign = align;
+  ctx.fillStyle = textColor;
+
+  // 主标题
+  ctx.font = `700 74px "PingFang SC", "Microsoft YaHei", sans-serif`;
+  titleLines.forEach((line, i) => ctx.fillText(line, tx, startY + i * 88));
+
+  // 分隔线（衬底元素规范）
+  const lineY = startY + titleLines.length * 88 - 20;
+  ctx.fillRect(align === 'center' ? tx - 45 : align === 'right' ? tx - 90 : tx, lineY, 90, 5);
+
+  // 副标题
+  ctx.font = `400 34px "PingFang SC", "Microsoft YaHei", sans-serif`;
+  subLines.forEach((line, i) => ctx.fillText(line, tx, lineY + 58 + i * 48));
+
+  // 点击引导按钮
+  const ctaY = lineY + 58 + subLines.length * 48 + 24;
+  ctx.font = `600 32px "PingFang SC", "Microsoft YaHei", sans-serif`;
+  const tw = ctx.measureText(cta).width;
+  const bw = tw + 90, bh = 68;
+  const bx = align === 'center' ? tx - bw / 2 : align === 'right' ? tx - bw : tx;
+  ctx.fillStyle = ctaColor;
+  ctx.beginPath();
+  ctx.roundRect(bx, ctaY, bw, bh, bh / 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${cta} ›`, bx + bw / 2, ctaY + bh / 2 + 12);
+
+  return canvas.toDataURL('image/png');
+}
+
+// ---------- WCAG 2 对比度（文章「配色规范」：正文 >4.5:1，标题 >3:1） ----------
+function luminance(hex: string): number {
+  const c = hex.replace('#', '');
+  const [r, g, b] = [0, 2, 4].map(i => {
+    const v = parseInt(c.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+export function contrastRatio(fg: string, bg: string): number {
+  const [l1, l2] = [luminance(fg), luminance(bg)].sort((a, b) => b - a);
+  return (l1 + 0.05) / (l2 + 0.05);
 }
 
 // ---------- 文本线：引流标题 / 详情文案（演示规则引擎，可替换为 LLM API） ----------
 
 const TITLE_TEMPLATES = [
-  (n: string, p: string) => `${p}，${n} 限时特惠`,
-  (n: string, p: string) => `海外爆款 ${n}｜${p}`,
-  (n: string, p: string) => `${n}：${p}，买它就够了`,
-  (n: string, p: string) => `为什么海外买家都在抢这款${n}？${p}`,
-  (n: string, p: string) => `${p} · ${n}，今日上新`,
+  (n: string, p: string) => `${p}${n}`,
+  (n: string, p: string) => `${n} ${p}`,
+  (n: string, p: string) => `${p} 就选${n}`,
+  (n: string, _p: string) => `${n} 焕新上市`,
+  (n: string, _p: string) => `品质${n} 口碑之选`,
 ];
 
 export function generateCopy(skuName: string, points: string[]): { titles: string[]; detail: string } {

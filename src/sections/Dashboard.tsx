@@ -35,6 +35,19 @@ export default function Dashboard() {
         <p className="text-sm text-muted-foreground mt-1">文章的 SOP 第 2 步：没有指标就无法判断工具好不好。所有优化都对着这几个数字。</p>
       </div>
 
+      {/* 文章原项目（京东内部）公布的实际指标 */}
+      <Card className="border-indigo-200 bg-indigo-50/40">
+        <CardContent className="py-3.5 flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+          <span className="font-medium text-indigo-900">📌 文章原项目实测指标（对标目标）：</span>
+          <span>日产 <b>20,000</b> 图</span>
+          <span>批量测试 <b>500+</b> 张/list</span>
+          <span>场景多样性 <b>120+</b></span>
+          <span>首焦消耗覆盖 <b>50+</b></span>
+          <span>消费占比 <b className="text-emerald-600">↑4.5+</b></span>
+          <span>SKU 多样性 <b className="text-emerald-600">↑0.5+</b></span>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map(m => (
           <Card key={m.label}>

@@ -51,6 +51,31 @@ export default function LoraModels() {
           <p>5️⃣ <b>验收调优</b>：权重 0.6~0.8 试出图，盯三个指标——良率 / 多样性 / 稳定性，不达标就回去调素材或参数</p>
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader><CardTitle className="text-base">文章公布的训练参数（Kohya，照抄即可）</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-muted-foreground border-b"><th className="py-2">类型</th><th>参数</th><th>值</th></tr>
+            </thead>
+            <tbody className="text-sm">
+              <tr className="border-b"><td className="py-2 font-medium" rowSpan={2}>变量（按素材量）</td><td className="py-2">30–100 张</td><td className="font-mono text-xs">repeat=60 · network_dim=64 · network_alpha=32</td></tr>
+              <tr className="border-b"><td className="py-2">101–500 张</td><td className="font-mono text-xs">repeat=80 · network_dim=128 · network_alpha=64</td></tr>
+              <tr className="border-b"><td className="py-2 font-medium">定量（别动）</td><td colSpan={2} className="font-mono text-xs">batch_size=1 · unet_lr=1e-4 · text_encoder_lr=1e-5</td></tr>
+              <tr><td className="py-2 font-medium">loss 合格线</td><td colSpan={2}>0.07–0.08（epoch 跑 1–2 轮 loss 降不下来就调变量重训）</td></tr>
+            </tbody>
+          </table>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[['拟合度测试', '训练集特征是否学到'], ['泛化性测试', '换产品/场景是否跑偏'], ['自动化批量测试', '500+ 张/list 压测稳定性']].map(([t, d]) => (
+              <div key={t} className="border rounded-lg p-3">
+                <div className="text-sm font-medium">{t}</div>
+                <div className="text-xs text-muted-foreground mt-1">{d}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">文章原话：三个维度在哪个流程节点就已存在对结果影响，一个维度测试不达标，可精准找到需要优化的节点。</p>
+        </CardContent>
+      </Card>
     </div>
   );
 }

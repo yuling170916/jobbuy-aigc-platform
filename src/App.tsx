@@ -2,6 +2,9 @@
 // 复刻文章《如何搭建日产20000张图的AIGC工具》的完整链路
 import { NavLink, Route, Routes } from 'react-router';
 import { StoreProvider, useStore } from '@/lib/store';
+import QuickGenerate from '@/sections/QuickGenerate';
+import AdLayout from '@/sections/AdLayout';
+import SceneAnalysis from '@/sections/SceneAnalysis';
 import Dashboard from '@/sections/Dashboard';
 import BatchGenerate from '@/sections/BatchGenerate';
 import TaskQueue from '@/sections/TaskQueue';
@@ -12,13 +15,16 @@ import CopyLab from '@/sections/CopyLab';
 import SettingsPage from '@/sections/SettingsPage';
 
 const NAV = [
-  { to: '/', label: '数据看板', icon: '📊' },
+  { to: '/', label: '一键生成', icon: '🚀' },
+  { to: '/layout', label: '图文布局', icon: '🪧' },
   { to: '/batch', label: '批量生图', icon: '🖼️' },
   { to: '/queue', label: '任务队列', icon: '⏳' },
   { to: '/review', label: '素材审核', icon: '✅' },
   { to: '/library', label: '素材库', icon: '🗂️' },
+  { to: '/scenes', label: '场景拆解', icon: '🧩' },
   { to: '/loras', label: 'LoRA 模型库', icon: '🧬' },
   { to: '/copy', label: '文案工坊', icon: '✍️' },
+  { to: '/dashboard', label: '数据看板', icon: '📊' },
   { to: '/settings', label: '设置', icon: '⚙️' },
 ];
 
@@ -61,13 +67,16 @@ function Shell() {
       </aside>
       <main className="flex-1 p-6 max-w-[1400px]">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<QuickGenerate />} />
+          <Route path="/layout" element={<AdLayout />} />
           <Route path="/batch" element={<BatchGenerate />} />
           <Route path="/queue" element={<TaskQueue />} />
           <Route path="/review" element={<Review />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/scenes" element={<SceneAnalysis />} />
           <Route path="/loras" element={<LoraModels />} />
           <Route path="/copy" element={<CopyLab />} />
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
